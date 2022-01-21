@@ -34,16 +34,21 @@ async def daily_w2g():
       'Content-Type': 'application/json'
     }
     body = json.dumps({
-      "w2g_api_key": "{0}".format(W2GAPI)
+      "w2g_api_key": "{0}".format(W2GAPI),
+      "share" : "https://www.youtube.com/watch?v=lm6IU6V-dE8", # Let's all go to the lobby
+      "bg_color" : "#000000",
+      "bg_opacity" : "50"
     }, separators=(',', ':'))
-    data = requests.post(url,headers,body).json()
+    data = requests.post(url,headers=headers,data=body).json()
     print(data)
     streamkey = data['streamkey']
     keyem = discord.Embed(
-      title = 'Here is the your Watch2Gether Link: \n https://w2g.tv/rooms/' + streamkey,
+      title = 'Here is the your Watch2Gether Link: \nhttps://w2g.tv/rooms/'+ streamkey, 
+      description = 'Watch2Gether lets you watch videos with your friends, synchronized at the same time.',
       color = 16776960,
       url = 'https://w2g.tv/rooms/' + streamkey
     )
+    keyem.set_thumbnail(url="https://w2g.tv/static/watch2gether-share.jpg")
     channel = bot.get_guild(GUILD).get_channel(CHANNEL) 
     await channel.send(embed = keyem)
     
