@@ -35,7 +35,25 @@ async def on_ready():
 async def w2g(ctx):
     await daily_w2g()
 
-@bot.command(name='queue',help="Add a video to the lastest watchtogether's playlist.")
+@bot.command(name='watch',help="Play a video in the lastest watch2gether.")
+async def watch(ctx, link):
+    # POST request  
+    streamkey = os.environ['STREAMKEY']
+    if streamkey == 'null':
+      #generate key
+      print('no streamkey...')
+    url = "https://w2g.tv/rooms/{0}/sync_update".format(streamkey)
+    print(url)
+    body = json.dumps({
+      "w2g_api_key": "{0}".format(W2GAPI),
+      "item_url" : link
+    }, separators=(',', ':'))
+    print(json.loads(body))
+    print(body)
+    data = requests.post(url,headers=headers,data=body).json()
+    print(data)
+
+@bot.command(name='queue',help="Add a video to the lastest watch2gether's playlist.")
 async def queue(ctx, link):
     # Currently the W2G API requires you to indivially name videos with the 'title' key.
     # So given a youtube URL I need to extract the videos title, so I can fill the 'title' key.
