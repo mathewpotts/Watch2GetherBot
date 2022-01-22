@@ -27,6 +27,9 @@ headers =  {
   'Content-Type': 'application/json'
 }
 
+# Define Watch2gether channel object
+channel = bot.get_guild(GUILD).get_channel(CHANNEL)
+
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} is connected to Discord.\n')
@@ -40,17 +43,15 @@ async def watch(ctx, link):
     # POST request  
     streamkey = os.environ['STREAMKEY']
     if streamkey == 'null':
-      #generate key
-      print('no streamkey...')
+      # Notify that there is no streamkey
+      await channel.send("No streamkey found. Please create a new room.")
     url = "https://w2g.tv/rooms/{0}/sync_update".format(streamkey)
     print(url)
     body = json.dumps({
       "w2g_api_key": "{0}".format(W2GAPI),
       "item_url" : link
     }, separators=(',', ':'))
-    print(json.loads(body))
-    print(body)
-    data = requests.post(url,headers=headers,data=body).json()
+    data = requests.post(url,headers=headers,data=body)
     print(data)
 
 @bot.command(name='queue',help="Add a video to the lastest watch2gether's playlist.")
@@ -66,18 +67,16 @@ async def queue(ctx, link):
     # POST request  
     streamkey = os.environ['STREAMKEY']
     if streamkey == 'null':
-      #generate key
-      print('no streamkey...')
-    
+      # Notify that there is no streamkey
+      await channel.send("No streamkey found. Please create a new room.")    
     purl = "https://w2g.tv/rooms/{0}/playlists/current/playlist_items/sync_update".format(streamkey)
     print(purl)
     body = json.dumps({
       "w2g_api_key": "{0}".format(W2GAPI),
       "add_items" : [{"url": link,"title": title}]
     }, separators=(',', ':'))
-    print(json.loads(body))
     print(body)
-    data = requests.post(purl,headers=headers,data=body).json()
+    data = requests.post(purl,headers=headers,data=body)
     print(data)
 
 async def daily_w2g():
@@ -98,8 +97,7 @@ async def daily_w2g():
       color = 16776960,
       url = 'https://w2g.tv/rooms/' + streamkey
     )
-    keyem.set_thumbnail(url="https://w2g.tv/static/watch2gether-share.jpg")
-    channel = bot.get_guild(GUILD).get_channel(CHANNEL) 
+    keyem.set_thumbnail(url="https://w2g.tv/static/watch2gether-share.jpg") 
     await channel.send(embed = keyem)
 
 async def called_once_a_day():  # Fired every day
