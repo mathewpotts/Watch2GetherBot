@@ -7,6 +7,7 @@ from discord.ext import commands
 from datetime import datetime, time, timedelta
 import asyncio
 from keep_alive import keep_alive
+from collections import deque
 
 # Grabbing enviromental variables
 TOKEN   = os.environ['TOKEN']
@@ -15,9 +16,16 @@ CHANNEL = int(os.environ['CHANNEL'])
 GUILD   = int(os.environ['GUILD'])
 
 # Setting the time for Post time
-WHEN = time(10, 0, 0)  # 10:00 am (3 am MT) 
+WHEN = deque([time(10, 0, 0), time(22, 0, 0)])  # 10 am (3 am MT) and 22:00 pm (5 pm MT)
 
+# Setting command prefix
 bot = commands.Bot(command_prefix='!')
+
+# Defining headers for W2G API
+headers =  {
+  'Accept': 'application/json',
+  'Content-Type': 'application/json'
+}
 
 @bot.event
 async def on_ready():
@@ -27,21 +35,45 @@ async def on_ready():
 async def w2g(ctx):
     await daily_w2g()
 
+@bot.command(name='watch',help="Add a video to the lastest watchtogether's playlist.")
+async def watch(ctx, link):
+    # Currently the W2G API requires you to indivially name videos with the 'title' key.
+    # So given a youtube URL I need to extract the videos title, so I can fill the 'title' key.
+    # GET request
+    params = {"format": "json", "url": link}
+    gurl = requests.Request("GET","https://www.youtube.com/oembed",params=params).prepare().url 
+    data = requests.get(gurl).json()
+    title = data['title']
+
+    # POST request  
+    streamkey = os.environ['STREAMKEY']
+    if streamkey == 'null':
+      #generate key
+      print('no streamkey...')
+    
+    purl = "https://w2g.tv/rooms/{0}/playlists/current/playlist_items/sync_update".format(streamkey)
+    print(purl)
+    body = json.dumps({
+      "w2g_api_key": "{0}".format(W2GAPI),
+      "add_items" : [{"url": link,"title": title}]
+    }, separators=(',', ':'))
+    print(json.loads(body))
+    print(body)
+    data = requests.post(purl,headers=headers,data=body).json()
+    print(data)
+
 async def daily_w2g():
     url = 'https://w2g.tv/rooms/create.json'
-    headers =  {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    }
     body = json.dumps({
       "w2g_api_key": "{0}".format(W2GAPI),
       "share" : "https://www.youtube.com/watch?v=lm6IU6V-dE8", # Let's all go to the lobby
-      "bg_color" : "#000000",
+      "bg_color" : "#000000", # Black
       "bg_opacity" : "50"
     }, separators=(',', ':'))
     data = requests.post(url,headers=headers,data=body).json()
     print(data)
-    streamkey = data['streamkey']
+    os.environ['STREAMKEY'] = data['streamkey']
+    streamkey = os.environ['STREAMKEY']
     keyem = discord.Embed(
       title = 'Here is the your Watch2Gether Link: \nhttps://w2g.tv/rooms/'+ streamkey, 
       description = 'Watch2Gether lets you watch videos with your friends, synchronized at the same time.',
@@ -51,20 +83,21 @@ async def daily_w2g():
     keyem.set_thumbnail(url="https://w2g.tv/static/watch2gether-share.jpg")
     channel = bot.get_guild(GUILD).get_channel(CHANNEL) 
     await channel.send(embed = keyem)
-    
+
 async def called_once_a_day():  # Fired every day
     await bot.wait_until_ready()  # Make sure your guild cache is ready so the channel can be found via get_channel
     await daily_w2g() 
+    WHEN.rotate(1) # Rotate list by 1 (i.e. swap list elements and change the time that message is posted)
 
 async def background_task():
     now = datetime.utcnow()
-    if now.time() > WHEN:  # Make sure loop doesn't start after {WHEN} as then it will send immediately the first time as negative seconds will make the sleep yield instantly
+    if now.time() > WHEN[0]:  # Make sure loop doesn't start after {WHEN} as then it will send immediately the first time as negative seconds will make the sleep yield instantly
         tomorrow = datetime.combine(now.date() + timedelta(days=1), time(0))
         seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
         await asyncio.sleep(seconds)   # Sleep until tomorrow and then the loop will start 
     while True:
         now = datetime.utcnow() # You can do now() or a specific timezone if that matters, but I'll leave it with utcnow
-        target_time = datetime.combine(now.date(), WHEN)  # 6:00 PM today (In UTC)
+        target_time = datetime.combine(now.date(), WHEN[0])  # 6:00 PM today (In UTC)
         seconds_until_target = (target_time - now).total_seconds()
         await asyncio.sleep(seconds_until_target)  # Sleep until we hit the target time
         await called_once_a_day()  # Call the helper function that sends the message
