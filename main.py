@@ -35,8 +35,8 @@ async def on_ready():
 async def w2g(ctx):
     await daily_w2g()
 
-@bot.command(name='watch',help="Add a video to the lastest watchtogether's playlist.")
-async def watch(ctx, link):
+@bot.command(name='queue',help="Add a video to the lastest watchtogether's playlist.")
+async def queue(ctx, link):
     # Currently the W2G API requires you to indivially name videos with the 'title' key.
     # So given a youtube URL I need to extract the videos title, so I can fill the 'title' key.
     # GET request
