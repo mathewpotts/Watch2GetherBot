@@ -27,9 +27,6 @@ headers =  {
   'Content-Type': 'application/json'
 }
 
-# Define Watch2gether channel object
-channel = bot.get_guild(GUILD).get_channel(CHANNEL)
-
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} is connected to Discord.\n')
@@ -40,6 +37,8 @@ async def w2g(ctx):
 
 @bot.command(name='watch',help="Play a video in the lastest watch2gether.")
 async def watch(ctx, link):
+    # Define Watch2gether channel object
+    channel = bot.get_guild(GUILD).get_channel(CHANNEL)
     # POST request  
     streamkey = os.environ['STREAMKEY']
     if streamkey == 'null':
@@ -56,6 +55,8 @@ async def watch(ctx, link):
 
 @bot.command(name='queue',help="Add a video to the lastest watch2gether's playlist.")
 async def queue(ctx, link):
+    # Define Watch2gether channel object
+    channel = bot.get_guild(GUILD).get_channel(CHANNEL)
     # Currently the W2G API requires you to indivially name videos with the 'title' key.
     # So given a youtube URL I need to extract the videos title, so I can fill the 'title' key.
     # GET request
@@ -83,6 +84,8 @@ async def queue(ctx, link):
     print(data)
 
 async def daily_w2g():
+    # Define Watch2gether channel object
+    channel = bot.get_guild(GUILD).get_channel(CHANNEL)
     url = 'https://w2g.tv/rooms/create.json'
     body = json.dumps({
       "w2g_api_key": "{0}".format(W2GAPI),
