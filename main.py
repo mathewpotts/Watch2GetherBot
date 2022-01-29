@@ -7,7 +7,6 @@ from discord.ext import commands
 from datetime import datetime, time, timedelta
 import asyncio
 from keep_alive import keep_alive
-from collections import deque
 
 # Grabbing enviromental variables
 TOKEN   = os.environ['TOKEN']
@@ -16,7 +15,7 @@ CHANNEL = int(os.environ['CHANNEL'])
 GUILD   = int(os.environ['GUILD'])
 
 # Setting the time for Post time
-WHEN = deque([time(10, 0, 0), time(22, 0, 0)])  # 10 am (3 am MT) and 22:00 pm (5 pm MT)
+WHEN = time(17, 0, 0)  # 17:00 pm (10 am MT) and 22:00 pm (5 pm MT)
 
 # Setting command prefix
 bot = commands.Bot(command_prefix='!')
@@ -109,17 +108,16 @@ async def daily_w2g():
 async def called_once_a_day():  # Fired every day
     await bot.wait_until_ready()  # Make sure your guild cache is ready so the channel can be found via get_channel
     await daily_w2g() 
-    WHEN.rotate(1) # Rotate list by 1 (i.e. swap list elements and change the time that message is posted)
 
 async def background_task():
     now = datetime.utcnow()
-    if now.time() > WHEN[0]:  # Make sure loop doesn't start after {WHEN} as then it will send immediately the first time as negative seconds will make the sleep yield instantly
+    if now.time() > WHEN:  # Make sure loop doesn't start after {WHEN} as then it will send immediately the first time as negative seconds will make the sleep yield instantly
         tomorrow = datetime.combine(now.date() + timedelta(days=1), time(0))
         seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
         await asyncio.sleep(seconds)   # Sleep until tomorrow and then the loop will start 
     while True:
         now = datetime.utcnow() # You can do now() or a specific timezone if that matters, but I'll leave it with utcnow
-        target_time = datetime.combine(now.date(), WHEN[0])  # 6:00 PM today (In UTC)
+        target_time = datetime.combine(now.date(), WHEN)  # 17:00 pm today (In UTC)
         seconds_until_target = (target_time - now).total_seconds()
         await asyncio.sleep(seconds_until_target)  # Sleep until we hit the target time
         await called_once_a_day()  # Call the helper function that sends the message
