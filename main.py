@@ -117,20 +117,20 @@ async def called_once_a_day():  # Fired every day
     await bot.wait_until_ready()  # Make sure your guild cache is ready so the channel can be found via get_channel
     await daily_w2g() 
 
-def check(msg):
+def check_if_bot(msg):
     # Return True if the message is from this bot and if it is an embed link (i.e., embed strings have no characters)
     return bot.user.name in str(msg.author) and len(msg.content) == 0
 
 async def set_WHEN():
     await bot.wait_until_ready()
     channel = bot.get_guild(GUILD).get_channel(CHANNEL)
-    msgs = await channel.history(limit=50).filter(check).flatten()
+    msgs = await channel.history(limit=50).filter(check_if_bot).flatten()
     
     # Case where the bot has no messages in channel
     if len(msgs) == 0:
         print("Creating first W2G link")
         await daily_w2g()
-        msgs = list(await channel.history().filter(check)) #last message
+        msgs = list(await channel.history().filter(check_if_bot)) #last message
     
     # Re-define WHEN based on last link post time
     if '17:00' in str(msgs[0].created_at):
