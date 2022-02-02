@@ -44,7 +44,7 @@ async def w2g(ctx):
 
 @bot.command(name='watch',help="Play a video in the lastest watch2gether.")
 async def watch(ctx, link):
-    channel, msgs, last_embed = await get_w2g_channel()
+    channel,msgs,last_scheduled,last_embed = await get_w2g_channel()
     # POST request  
     streamkey = os.environ['STREAMKEY']
     if streamkey == 'null':
@@ -61,7 +61,7 @@ async def watch(ctx, link):
 
 @bot.command(name='queue',help="Add a video to the lastest watch2gether's playlist.")
 async def queue(ctx, link):
-    channel, msgs, last_embed = await get_w2g_channel()
+    channel,msgs,last_scheduled,last_embed = await get_w2g_channel()
     # Currently the W2G API requires you to indivially name videos with the 'title' key.
     # So given a youtube URL I need to extract the videos title, so I can fill the 'title' key.
     # GET request
@@ -90,7 +90,7 @@ async def queue(ctx, link):
     print(data)
 
 async def daily_w2g():
-    channel, msgs, last_embed = await get_w2g_channel()
+    channel,msgs,last_scheduled,last_embed = await get_w2g_channel()
     url = 'https://w2g.tv/rooms/create.json'
     body = json.dumps({
       "w2g_api_key": f"{W2GAPI}",
@@ -118,31 +118,34 @@ async def get_w2g_channel():
     await bot.wait_until_ready() # Make sure your guild cache is ready so the channel can be found via get_channel
     channel = bot.get_guild(GUILD).get_channel(CHANNEL)
     bot_msgs = await channel.history(limit=50).filter(check_if_bot).flatten()
+    # for loop to find last_scheduled embed
+    bot_scheduled_msgs = [msg for msg in list(bot_msgs) if '17:00:0' in str(msg.created_at) or '05:00:0' in str(msg.created_at)]
+    last_scheduled = bot_scheduled_msgs[0].created_at
+    print("Last Scheduled Post:", last_scheduled)
     last_embed = bot_msgs[0].embeds # last !w2g command, may include user commands that won't have specific time...
-    return channel, list(bot_msgs), last_embed
+    return channel, list(bot_msgs), last_scheduled, last_embed
 
 def check_if_bot(msg):
     # Return True if the message is from this bot and if it is an embed link (i.e., embed strings have no characters)
     return bot.user.name in str(msg.author) and len(msg.content) == 0
 
 async def set_WHEN():
-    channel,msgs,last_embed = await get_w2g_channel()
+    channel,msgs,last_scheduled,last_embed = await get_w2g_channel()
     # Case where the bot has no messages in channel
     if len(msgs) == 0:
         print("Creating first W2G link")
         await daily_w2g()
-        channel,msgs,last_embed = await get_w2g_channel() 
+        channel,msgs,last_scheduled,last_embed = await get_w2g_channel() 
     
-    # Re-define WHEN based on last link post time
-    # maybe try to add 36 hours from last post?? Probably better?
-    if '17:00' in str(msgs[0].created_at):
+    # Re-define WHEN based on last scheduled post
+    if '17:00:0' in str(last_scheduled):
         WHEN = time(5, 0, 0)
-    elif '5:00' in str(msgs[0].created_at):
+    elif '05:00:0' in str(last_scheduled):
         WHEN = time(17,0,0)
     else:
-        print("Something has gone terribly wrong...")
+        print("Something has gone terribly wrong... Using default time...")  
 
-    print(f'Setting post time to {WHEN}')
+    print('Scheduled Post Time:', datetime.combine(datetime.utcnow().date() + timedelta(days=1), WHEN))
     return WHEN
 
 async def background_task():
