@@ -40,7 +40,7 @@ async def on_ready():
 
 @bot.command(name='w2g', help='Posts a new Watch2Gether Link.')
 async def w2g(ctx):
-    await daily_w2g()
+    await daily_w2g() # Call room generation function
 
 @bot.command(name='watch',help="Play a video in the lastest watch2gether.")
 async def watch(ctx, link):
@@ -76,6 +76,7 @@ async def queue(ctx, link):
       title = link
 
     # POST request  
+    # This is gonna need to be replaced so that it will grab the key from a previous message...
     streamkey = os.environ['STREAMKEY']
     if streamkey == 'null':
       # Notify that there is no streamkey
@@ -115,7 +116,7 @@ async def daily_w2g():
 
 async def called_once_a_day():  # Fired every day
     await bot.wait_until_ready()  # Make sure your guild cache is ready so the channel can be found via get_channel
-    await daily_w2g() 
+    await daily_w2g() # Call room generation function
 
 def check_if_bot(msg):
     # Return True if the message is from this bot and if it is an embed link (i.e., embed strings have no characters)
