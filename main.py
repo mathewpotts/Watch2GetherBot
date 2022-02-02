@@ -126,7 +126,11 @@ async def set_WHEN():
     await bot.wait_until_ready()
     channel = bot.get_guild(GUILD).get_channel(CHANNEL)
     msgs = await channel.history(limit=50).filter(check_if_bot).flatten()
-    
+
+    # Grab the title of the of the last embed link
+    tests = msgs[0].embeds
+    for test in tests:
+      print(test.to_dict()['title'])
     # Case where the bot has no messages in channel
     if len(msgs) == 0:
         print("Creating first W2G link")
