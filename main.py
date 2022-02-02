@@ -44,17 +44,16 @@ async def w2g(ctx):
 
 @bot.command(name='watch',help="Play a video in the lastest watch2gether.")
 async def watch(ctx, link):
-    # Define Watch2gether channel object
-    channel = bot.get_guild(GUILD).get_channel(CHANNEL)
+    channel, msgs, last_embed = await get_w2g_channel()
     # POST request  
     streamkey = os.environ['STREAMKEY']
     if streamkey == 'null':
       # Notify that there is no streamkey
       await channel.send("No streamkey found. Please create a new room.")
-    url = "https://w2g.tv/rooms/{0}/sync_update".format(streamkey)
+    url = f"https://w2g.tv/rooms/{streamkey}/sync_update"
     print(url)
     body = json.dumps({
-      "w2g_api_key": "{0}".format(W2GAPI),
+      "w2g_api_key": f"{W2GAPI}",
       "item_url" : link
     }, separators=(',', ':'))
     data = requests.post(url,headers=headers,data=body)
@@ -62,8 +61,7 @@ async def watch(ctx, link):
 
 @bot.command(name='queue',help="Add a video to the lastest watch2gether's playlist.")
 async def queue(ctx, link):
-    # Define Watch2gether channel object
-    channel = bot.get_guild(GUILD).get_channel(CHANNEL)
+    channel, msgs, last_embed = await get_w2g_channel()
     # Currently the W2G API requires you to indivially name videos with the 'title' key.
     # So given a youtube URL I need to extract the videos title, so I can fill the 'title' key.
     # GET request
@@ -81,10 +79,10 @@ async def queue(ctx, link):
     if streamkey == 'null':
       # Notify that there is no streamkey
       await channel.send("No streamkey found. Please create a new room.")    
-    purl = "https://w2g.tv/rooms/{0}/playlists/current/playlist_items/sync_update".format(streamkey)
+    purl = f"https://w2g.tv/rooms/{streamkey}/playlists/current/playlist_items/sync_update"
     print(purl)
     body = json.dumps({
-      "w2g_api_key": "{0}".format(W2GAPI),
+      "w2g_api_key": f"{W2GAPI}",
       "add_items" : [{"url": link,"title": title}]
     }, separators=(',', ':'))
     print(body)
@@ -92,11 +90,10 @@ async def queue(ctx, link):
     print(data)
 
 async def daily_w2g():
-    # Define Watch2gether channel object
-    channel = bot.get_guild(GUILD).get_channel(CHANNEL)
+    channel, msgs, last_embed = await get_w2g_channel()
     url = 'https://w2g.tv/rooms/create.json'
     body = json.dumps({
-      "w2g_api_key": "{0}".format(W2GAPI),
+      "w2g_api_key": f"{W2GAPI}",
       "share" : "https://www.youtube.com/watch?v=lm6IU6V-dE8", # Let's all go to the lobby
       "bg_color" : "#000000", # Black
       "bg_opacity" : "50"
@@ -114,28 +111,27 @@ async def daily_w2g():
     keyem.set_thumbnail(url="https://w2g.tv/static/watch2gether-share.jpg") 
     await channel.send(embed = keyem)
 
-async def called_once_a_day():  # Fired every day
-    await bot.wait_until_ready()  # Make sure your guild cache is ready so the channel can be found via get_channel
+async def called_once_a_day():  # Fired every day  
     await daily_w2g() # Call room generation function
+
+async def get_w2g_channel():
+    await bot.wait_until_ready() # Make sure your guild cache is ready so the channel can be found via get_channel
+    channel = bot.get_guild(GUILD).get_channel(CHANNEL)
+    bot_msgs = await channel.history(limit=50).filter(check_if_bot).flatten()
+    last_embed = bot_msgs[0].embeds
+    return channel, list(bot_msgs), last_embed
 
 def check_if_bot(msg):
     # Return True if the message is from this bot and if it is an embed link (i.e., embed strings have no characters)
     return bot.user.name in str(msg.author) and len(msg.content) == 0
 
 async def set_WHEN():
-    await bot.wait_until_ready()
-    channel = bot.get_guild(GUILD).get_channel(CHANNEL)
-    msgs = await channel.history(limit=50).filter(check_if_bot).flatten()
-
-    # Grab the title of the of the last embed link
-    tests = msgs[0].embeds
-    for test in tests:
-      print(test.to_dict()['title'])
+    channel,msgs,last_embed = await get_w2g_channel()
     # Case where the bot has no messages in channel
     if len(msgs) == 0:
         print("Creating first W2G link")
         await daily_w2g()
-        msgs = list(await channel.history().filter(check_if_bot)) #last message
+        channel,msgs,last_embed = await get_w2g_channel() 
     
     # Re-define WHEN based on last link post time
     if '17:00' in str(msgs[0].created_at):
