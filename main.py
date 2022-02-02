@@ -118,7 +118,7 @@ async def get_w2g_channel():
     await bot.wait_until_ready() # Make sure your guild cache is ready so the channel can be found via get_channel
     channel = bot.get_guild(GUILD).get_channel(CHANNEL)
     bot_msgs = await channel.history(limit=50).filter(check_if_bot).flatten()
-    last_embed = bot_msgs[0].embeds
+    last_embed = bot_msgs[0].embeds # last !w2g command, may include user commands that won't have specific time...
     return channel, list(bot_msgs), last_embed
 
 def check_if_bot(msg):
@@ -134,6 +134,7 @@ async def set_WHEN():
         channel,msgs,last_embed = await get_w2g_channel() 
     
     # Re-define WHEN based on last link post time
+    # maybe try to add 36 hours from last post?? Probably better?
     if '17:00' in str(msgs[0].created_at):
         WHEN = time(5, 0, 0)
     elif '5:00' in str(msgs[0].created_at):
