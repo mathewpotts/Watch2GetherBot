@@ -14,8 +14,9 @@ W2GAPI  = os.environ['W2G-API']
 CHANNEL = int(os.environ['CHANNEL'])
 GUILD   = int(os.environ['GUILD'])
 
-# Setting the time for Post time
-WHEN = time(17, 0, 0)  # 17:00 pm (10 am MT) and 22:00 pm (5 pm MT)
+# Setting the time for Post time as a global variable
+global WHEN 
+WHEN = time(17,0,0) 
 
 # Setting command prefix
 bot = commands.Bot(command_prefix='!')
@@ -25,10 +26,17 @@ headers =  {
   'Accept': 'application/json',
   'Content-Type': 'application/json'
 }
-
+      
 @bot.event
 async def on_ready():
     print(f'{bot.user.name} is connected to Discord.\n')
+
+# Not needed at the moment maybe a future idea
+#@bot.event
+#async def on_message(msg):
+#    if msg.author.bot and bot.user.name in str(msg.author):
+#        print(os.environ['STREAMKEY'])
+#    await bot.process_commands(msg)
 
 @bot.command(name='w2g', help='Posts a new Watch2Gether Link.')
 async def w2g(ctx):
@@ -109,8 +117,28 @@ async def called_once_a_day():  # Fired every day
     await bot.wait_until_ready()  # Make sure your guild cache is ready so the channel can be found via get_channel
     await daily_w2g() 
 
+def check(msg):
+    return bot.user.name in str(msg.author) and len(msg.content) == 0
+
+async def set_WHEN():
+    await bot.wait_until_ready()
+    channel = bot.get_guild(GUILD).get_channel(CHANNEL)
+    msgs = await channel.history(limit=50).filter(check).flatten()
+    
+    if msgs is None:
+        print('Nothing here')
+    elif '17:00' in str(msgs[0].created_at):
+        WHEN = time(5, 0, 0)
+    elif '5:00' in str(msgs[0].created_at):
+        WHEN = time(17,0,0)
+
+    print(f'Setting post time to {WHEN}')
+    return WHEN
+
 async def background_task():
     now = datetime.utcnow()
+    WHEN = await set_WHEN()
+    #print(now,WHEN)
     if now.time() > WHEN:  # Make sure loop doesn't start after {WHEN} as then it will send immediately the first time as negative seconds will make the sleep yield instantly
         tomorrow = datetime.combine(now.date() + timedelta(days=1), time(0))
         seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
