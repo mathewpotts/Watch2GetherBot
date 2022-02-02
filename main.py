@@ -65,7 +65,7 @@ async def queue(ctx, link):
     # Currently the W2G API requires you to indivially name videos with the 'title' key.
     # So given a youtube URL I need to extract the videos title, so I can fill the 'title' key.
     # GET request
-    if 'youtu' in link: # if youtube link grab title
+    if 'youtu' in link: # if youtube link grab title, since by default the link will be the title of the added queued video
       params = {"format": "json", "url": link}
       gurl = requests.Request("GET","https://www.youtube.com/oembed",params=params).prepare().url 
       data = requests.get(gurl).json()
