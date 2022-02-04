@@ -145,7 +145,7 @@ async def set_WHEN():
     else:
         print("Something has gone terribly wrong... Using default time...")  
 
-    print('Scheduled Post Time:', datetime.combine(datetime.utcnow().date() + timedelta(days=1), WHEN))
+    print('Scheduled Post Time:', datetime.combine(datetime.utcnow().date() + timedelta(days=2), WHEN))
     return WHEN
 
 async def background_task():
@@ -153,16 +153,21 @@ async def background_task():
     WHEN = await set_WHEN()
     #print(now,WHEN)
     if now.time() > WHEN:  # Make sure loop doesn't start after {WHEN} as then it will send immediately the first time as negative seconds will make the sleep yield instantly
-        tomorrow = datetime.combine(now.date() + timedelta(days=1), time(0))
+        tomorrow = datetime.combine(now.date() + timedelta(days=2), time(0))
+        print('IF: Sleeping till Midnight:',tomorrow)
         seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
         await asyncio.sleep(seconds)   # Sleep until tomorrow and then the loop will start 
+        print("Awake now... Moving into 'active' loop")
     while True:
         now = datetime.utcnow() # You can do now() or a specific timezone if that matters, but I'll leave it with utcnow
         target_time = datetime.combine(now.date(), WHEN)  # 17:00 pm today (In UTC)
+        print('WHILE:',now,'Target Time:',target_time)
         seconds_until_target = (target_time - now).total_seconds()
+        print('WHILE: Sleeing for',seconds_until_target)
         await asyncio.sleep(seconds_until_target)  # Sleep until we hit the target time
         await called_once_a_day()  # Call the helper function that sends the message
-        tomorrow = datetime.combine(now.date() + timedelta(days=1), time(0))
+        tomorrow = datetime.combine(now.date() + timedelta(days=2), time(0))
+        print("WHILE: Sleeping for 24 hours",tomorrow)
         seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
         await asyncio.sleep(seconds)   # Sleep until tomorrow and then the loop will start a new iteration
 
