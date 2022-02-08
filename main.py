@@ -39,7 +39,7 @@ headers =  {
       
 @bot.event
 async def on_ready():
-    log.write(f'{bot.user.name} is connected to Discord.\n')
+    log.write(f'{bot.user.name} is connected to Discord.')
 
 @bot.command(name='w2g', help='Posts a new Watch2Gether Link.')
 async def w2g(ctx):
@@ -162,16 +162,16 @@ async def background_task():
         log.write("Awake now... Moving into 'active' loop")
     while True:
         now = datetime.utcnow() # You can do now() or a specific timezone if that matters, but I'll leave it with utcnow
-        target_time = datetime.combine(now.date(), WHEN)
+        target_time = datetime.combine(now.date()+timedelta(days=1), WHEN)
         log.write(f'WHILE: Scheduled Post Time - {target_time}')
-        log.write(f'WHILE: Sleeping for {target_time.total_hours()} hours')
         seconds_until_target = (target_time - now).total_seconds()
+        log.write(f'WHILE: Sleeping for {seconds_until_target/3600} hours')
         await asyncio.sleep(seconds_until_target)  # Sleep until we hit the target time
         log.write(f'WHILE: Posting link in discord.')
         await called_once_a_day()  # Call the helper function that sends the message
         tomorrow = datetime.combine(now.date() + timedelta(days= dt), time(0))
-        log.write(f"WHILE: Sleeping for {tomorrow.total_hours} hours")
         seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
+        log.write(f"WHILE: Sleeping for {seconds/3600} hours")
         await asyncio.sleep(seconds)   # Sleep until tomorrow and then the loop will start a new iteration
 
 
