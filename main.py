@@ -7,19 +7,29 @@ from discord.ext import commands
 from datetime import datetime, time, timedelta
 import asyncio
 from keep_alive import keep_alive
+import logger
+
+# Setting the W2G room creation parameters
+init_vid = "https://www.youtube.com/watch?v=lm6IU6V-dE8" # Let's all go to the lobby
+bg_color = "#000000" # Black
+bg_opacity = "50"
+
+# Setting the time for Post time as a global variable
+global WHEN 
+WHEN = time(17,0,0) # Default post time
+dt = 1 # number of days between scheduled posts 
+
+# Opening a log file
+log = logger.Log('log.txt',max_lines=200)
+
+# Setting command prefix
+bot = commands.Bot(command_prefix='!')
 
 # Grabbing enviromental variables
 TOKEN   = os.environ['TOKEN']
 W2GAPI  = os.environ['W2G-API']
 CHANNEL = int(os.environ['CHANNEL'])
 GUILD   = int(os.environ['GUILD'])
-
-# Setting the time for Post time as a global variable
-global WHEN 
-WHEN = time(17,0,0) 
-
-# Setting command prefix
-bot = commands.Bot(command_prefix='!')
 
 # Defining headers for W2G API
 headers =  {
@@ -29,14 +39,7 @@ headers =  {
       
 @bot.event
 async def on_ready():
-    print(f'{bot.user.name} is connected to Discord.\n')
-
-# Not needed at the moment maybe a future idea
-#@bot.event
-#async def on_message(msg):
-#    if msg.author.bot and bot.user.name in str(msg.author):
-#        print(os.environ['STREAMKEY'])
-#    await bot.process_commands(msg)
+    log.write(f'{bot.user.name} is connected to Discord.\n')
 
 @bot.command(name='w2g', help='Posts a new Watch2Gether Link.')
 async def w2g(ctx):
@@ -94,19 +97,19 @@ async def daily_w2g():
     url = 'https://w2g.tv/rooms/create.json'
     body = json.dumps({
       "w2g_api_key": f"{W2GAPI}",
-      "share" : "https://www.youtube.com/watch?v=lm6IU6V-dE8", # Let's all go to the lobby
-      "bg_color" : "#000000", # Black
-      "bg_opacity" : "50"
+      "share" : init_vid,
+      "bg_color" : bg_color,
+      "bg_opacity" : bg_opacity
     }, separators=(',', ':'))
     data = requests.post(url,headers=headers,data=body).json()
     print(data)
     os.environ['STREAMKEY'] = data['streamkey']
     streamkey = os.environ['STREAMKEY']
     keyem = discord.Embed(
-      title = 'Here is the your Watch2Gether Link: \nhttps://w2g.tv/rooms/'+ streamkey, 
+      title = f'Here is the your Watch2Gether Link: \nhttps://w2g.tv/rooms/{streamkey}', 
       description = 'Watch2Gether lets you watch videos with your friends, synchronized at the same time.',
       color = 16776960,
-      url = 'https://w2g.tv/rooms/' + streamkey
+      url = f'https://w2g.tv/rooms/{streamkey}'
     )
     keyem.set_thumbnail(url="https://w2g.tv/static/watch2gether-share.jpg") 
     await channel.send(embed = keyem)
@@ -121,7 +124,7 @@ async def get_w2g_channel():
     # for loop to find last_scheduled embed
     bot_scheduled_msgs = [msg for msg in list(bot_msgs) if '17:00:0' in str(msg.created_at) or '05:00:0' in str(msg.created_at)]
     last_scheduled = bot_scheduled_msgs[0].created_at
-    print("Last Scheduled Post:", last_scheduled)
+    log.write(f"Last Scheduled Post: {last_scheduled}")
     last_embed = bot_msgs[0].embeds # last !w2g command, may include user commands that won't have specific time...
     return channel, list(bot_msgs), last_scheduled, last_embed
 
@@ -133,7 +136,7 @@ async def set_WHEN():
     channel,msgs,last_scheduled,last_embed = await get_w2g_channel()
     # Case where the bot has no messages in channel
     if len(msgs) == 0:
-        print("Creating first W2G link")
+        log.write("No bot messages in this channel. Creating first W2G link",warn=True)
         await daily_w2g()
         channel,msgs,last_scheduled,last_embed = await get_w2g_channel() 
     
@@ -143,31 +146,30 @@ async def set_WHEN():
     elif '05:00:0' in str(last_scheduled):
         WHEN = time(17,0,0)
     else:
-        print("Something has gone terribly wrong... Using default time...")  
+        log.write("Something has gone terribly wrong... Using default time...",warn=True)  
 
-    print('Scheduled Post Time:', datetime.combine(datetime.utcnow().date() + timedelta(days=2), WHEN))
+    log.write(f'Scheduled Post Time: {datetime.combine(datetime.utcnow().date() + timedelta(days= dt),WHEN)}')
     return WHEN
 
 async def background_task():
     now = datetime.utcnow()
     WHEN = await set_WHEN()
-    #print(now,WHEN)
     if now.time() > WHEN:  # Make sure loop doesn't start after {WHEN} as then it will send immediately the first time as negative seconds will make the sleep yield instantly
-        tomorrow = datetime.combine(now.date() + timedelta(days=2), time(0))
-        print('IF: Sleeping till Midnight:',tomorrow)
+        tomorrow = datetime.combine(now.date() + timedelta(days= dt), time(0))
+        log.write(f'IF: Sleeping till Midnight: {tomorrow}')
         seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
         await asyncio.sleep(seconds)   # Sleep until tomorrow and then the loop will start 
-        print("Awake now... Moving into 'active' loop")
+        log.write("Awake now... Moving into 'active' loop")
     while True:
         now = datetime.utcnow() # You can do now() or a specific timezone if that matters, but I'll leave it with utcnow
         target_time = datetime.combine(now.date(), WHEN)  # 17:00 pm today (In UTC)
-        print('WHILE:',now,'Target Time:',target_time)
+        log.write(f'WHILE: {now}, Target Time: {target_time}')
         seconds_until_target = (target_time - now).total_seconds()
-        print('WHILE: Sleeing for',seconds_until_target)
+        log.write(f'WHILE: Sleeing for {seconds_until_target}')
         await asyncio.sleep(seconds_until_target)  # Sleep until we hit the target time
         await called_once_a_day()  # Call the helper function that sends the message
-        tomorrow = datetime.combine(now.date() + timedelta(days=2), time(0))
-        print("WHILE: Sleeping for 24 hours",tomorrow)
+        tomorrow = datetime.combine(now.date() + timedelta(days= dt), time(0))
+        log.write(f"WHILE: Sleeping for 24 hours {tomorrow}")
         seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
         await asyncio.sleep(seconds)   # Sleep until tomorrow and then the loop will start a new iteration
 
