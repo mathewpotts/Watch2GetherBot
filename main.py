@@ -162,14 +162,15 @@ async def background_task():
         log.write("Awake now... Moving into 'active' loop")
     while True:
         now = datetime.utcnow() # You can do now() or a specific timezone if that matters, but I'll leave it with utcnow
-        target_time = datetime.combine(now.date(), WHEN)  # 17:00 pm today (In UTC)
-        log.write(f'WHILE: {now}, Target Time: {target_time}')
+        target_time = datetime.combine(now.date(), WHEN)
+        log.write(f'WHILE: Scheduled Post Time - {target_time}')
+        log.write(f'WHILE: Sleeping for {target_time.total_hours()} hours')
         seconds_until_target = (target_time - now).total_seconds()
-        log.write(f'WHILE: Sleeing for {seconds_until_target}')
         await asyncio.sleep(seconds_until_target)  # Sleep until we hit the target time
+        log.write(f'WHILE: Posting link in discord.')
         await called_once_a_day()  # Call the helper function that sends the message
         tomorrow = datetime.combine(now.date() + timedelta(days= dt), time(0))
-        log.write(f"WHILE: Sleeping for 24 hours {tomorrow}")
+        log.write(f"WHILE: Sleeping for {tomorrow.total_hours} hours")
         seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
         await asyncio.sleep(seconds)   # Sleep until tomorrow and then the loop will start a new iteration
 
