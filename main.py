@@ -17,7 +17,7 @@ bg_opacity = "50"
 # Setting the time for Post time as a global variable
 global WHEN 
 WHEN = time(17,0,0) # Default post time
-dt = 1 # number of days between scheduled posts 
+dt = 0 # number of days between scheduled posts 
 
 # Opening a log file
 log = logger.Log('log.txt',max_lines=200)
@@ -142,38 +142,29 @@ async def set_WHEN():
     
     # Re-define WHEN based on last scheduled post
     if '17:00:0' in str(last_scheduled):
-        WHEN = time(5, 0, 0)
+        WHEN_t = time(5,0,0)
     elif '05:00:0' in str(last_scheduled):
-        WHEN = time(17,0,0)
+        WHEN_t = time(17,0,0)
     else:
         log.write("Something has gone terribly wrong... Using default time...",warn=True)  
-
-    log.write(f'Scheduled Post Time: {datetime.combine(datetime.utcnow().date() + timedelta(days= dt),WHEN)}')
+    WHEN = datetime.combine(last_scheduled.date()+timedelta(hours=36),WHEN_t)
+    log.write(f'Preliminary Scheduled Post Time: {WHEN}')
     return WHEN
 
 async def background_task():
-    now = datetime.utcnow()
-    WHEN = await set_WHEN()
-    if now.time() > WHEN:  # Make sure loop doesn't start after {WHEN} as then it will send immediately the first time as negative seconds will make the sleep yield instantly
-        tomorrow = datetime.combine(now.date() + timedelta(days= dt), time(0))
-        log.write(f'IF: Sleeping till Midnight: {tomorrow}')
-        seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
-        await asyncio.sleep(seconds)   # Sleep until tomorrow and then the loop will start 
-        log.write("Awake now... Moving into 'active' loop")
     while True:
         now = datetime.utcnow() # You can do now() or a specific timezone if that matters, but I'll leave it with utcnow
-        target_time = datetime.combine(now.date()+timedelta(days=1), WHEN)
-        log.write(f'WHILE: Scheduled Post Time - {target_time}')
+        target_time = await set_WHEN()
+        t_diff = target_time - now
+        if t_diff.total_seconds() < 0: # if the time difference is less than 0, set target_time to one day from now.
+            target_time = datetime.combine(now.date()+timedelta(days=1),target_time.time())
+            log.write(f't_diff less than 0 ({t_diff.total_seconds()/3600} hours). Modifying target_time.',warn=True)
+        log.write(f'Scheduled Post Time - {target_time}')
         seconds_until_target = (target_time - now).total_seconds()
-        log.write(f'WHILE: Sleeping for {seconds_until_target/3600} hours')
+        log.write(f'Sleeping for {seconds_until_target/3600} hours')
         await asyncio.sleep(seconds_until_target)  # Sleep until we hit the target time
         log.write(f'WHILE: Posting link in discord.')
         await called_once_a_day()  # Call the helper function that sends the message
-        tomorrow = datetime.combine(now.date() + timedelta(days= dt), time(0))
-        seconds = (tomorrow - now).total_seconds()  # Seconds until tomorrow (midnight)
-        log.write(f"WHILE: Sleeping for {seconds/3600} hours")
-        await asyncio.sleep(seconds)   # Sleep until tomorrow and then the loop will start a new iteration
-
 
 if __name__ == "__main__":
   bot.loop.create_task(background_task())
