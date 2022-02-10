@@ -154,10 +154,10 @@ async def set_WHEN():
 async def background_task():
     while True:
         now = datetime.utcnow() # You can do now() or a specific timezone if that matters, but I'll leave it with utcnow
-        target_time = await set_WHEN()
+        target_time = await set_WHEN() # preliminary target time
         t_diff = target_time - now
-        if t_diff.total_seconds() < 0: # if the time difference is less than 0, set target_time to one day from now.
-            target_time = datetime.combine(now.date()+timedelta(days=1),target_time.time())
+        if t_diff.total_seconds() < 0: # if the time difference is less than 0, set target_time to one day from preliminary target_time.
+            target_time = datetime.combine(target_time.date()+timedelta(days=1),target_time.time())
             log.write(f't_diff less than 0 ({t_diff.total_seconds()/3600} hours). Modifying target_time.',warn=True)
         log.write(f'Scheduled Post Time - {target_time}')
         seconds_until_target = (target_time - now).total_seconds()
