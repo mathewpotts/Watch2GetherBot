@@ -17,7 +17,9 @@ bg_opacity = "50"
 # Setting the time for Post time as a global variable
 global WHEN 
 WHEN = time(17,0,0) # Default post time
-dt = 0 # number of days between scheduled posts 
+
+# Setting number of hours between scheduled posts
+dt = 36  
 
 # Opening a log file
 log = logger.Log('log.txt',max_lines=200)
@@ -123,8 +125,8 @@ async def get_w2g_channel():
     bot_msgs = await channel.history(limit=50).filter(check_if_bot).flatten()
     # for loop to find last_scheduled embed
     bot_scheduled_msgs = [msg for msg in list(bot_msgs) if '17:00:0' in str(msg.created_at) or '05:00:0' in str(msg.created_at)]
-    last_scheduled = bot_scheduled_msgs[0].created_at
-    log.write(f"Last Scheduled Post: {last_scheduled}")
+    last_scheduled = bot_scheduled_msgs[0].created_at.replace(second=0,microsecond=0)
+    log.write(f'''Last Scheduled Post: {last_scheduled}''')
     last_embed = bot_msgs[0].embeds # last !w2g command, may include user commands that won't have specific time...
     return channel, list(bot_msgs), last_scheduled, last_embed
 
@@ -134,20 +136,15 @@ def check_if_bot(msg):
 
 async def set_WHEN():
     channel,msgs,last_scheduled,last_embed = await get_w2g_channel()
+
     # Case where the bot has no messages in channel
     if len(msgs) == 0:
         log.write("No bot messages in this channel. Creating first W2G link",warn=True)
         await daily_w2g()
         channel,msgs,last_scheduled,last_embed = await get_w2g_channel() 
     
-    # Re-define WHEN based on last scheduled post
-    if '17:00:0' in str(last_scheduled):
-        WHEN_t = time(5,0,0)
-    elif '05:00:0' in str(last_scheduled):
-        WHEN_t = time(17,0,0)
-    else:
-        log.write("Something has gone terribly wrong... Using default time...",warn=True)  
-    WHEN = datetime.combine(last_scheduled.date()+timedelta(hours=36),WHEN_t)
+    # Post every 36 hours and write to log
+    WHEN = last_scheduled + timedelta(hours=dt)
     log.write(f'Preliminary Scheduled Post Time: {WHEN}')
     return WHEN
 
@@ -156,6 +153,7 @@ async def background_task():
         now = datetime.utcnow() # You can do now() or a specific timezone if that matters, but I'll leave it with utcnow
         target_time = await set_WHEN() # preliminary target time
         t_diff = target_time - now
+        # Maybe change to a while loop that ends when t_diff is greater than 0. This would ensure that t_diff is positive no matter how many days it doesn't post 
         if t_diff.total_seconds() < 0: # if the time difference is less than 0, set target_time to one day from preliminary target_time.
             target_time = datetime.combine(target_time.date()+timedelta(days=1),target_time.time())
             log.write(f't_diff less than 0 ({t_diff.total_seconds()/3600} hours). Modifying target_time.',warn=True)
