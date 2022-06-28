@@ -18,7 +18,7 @@ bg_opacity = "50"
 WHEN_t = time(17,0,0) # Default post time
 
 # Setting number of hours between scheduled posts
-dt = 36  
+dt = 24  
 
 # Opening a log file
 log = logger.Log('log.txt',max_lines=200)
@@ -152,8 +152,9 @@ def check_if_bot(msg):
 async def set_WHEN():
     channel,msgs,last_scheduled,last_embed = await get_w2g_channel()
 
-    # Post every 36 hours and write to log
+    # Post every 24 hours and write to log
     WHEN = last_scheduled + timedelta(hours=dt)
+    #log.write(timedelta(hours=dt))
     log.write(f'Preliminary Scheduled Post Time: {WHEN}')
     return WHEN
 
@@ -163,9 +164,10 @@ async def background_task():
         target_time = await set_WHEN() # preliminary target time
         t_diff = target_time - now
         # Maybe change to a while loop that ends when t_diff is greater than 0. This would ensure that t_diff is positive no matter how many days it doesn't post 
-        if t_diff.total_seconds() < 0: # if the time difference is less than 0, set target_time to one day from preliminary target_time.
+        while t_diff.total_seconds() < 0: # if the time difference is less than 0, set target_time to one day from preliminary target_time. Fixed a bug that caused the target time to be zero, added while loop
             target_time = datetime.combine(target_time.date()+timedelta(days=1),target_time.time())
             log.write(f't_diff less than 0 ({t_diff.total_seconds()/3600} hours). Modifying target_time.',warn=True)
+            t_diff = target_time - now
         log.write(f'Scheduled Post Time - {target_time}')
         seconds_until_target = (target_time - now).total_seconds()
         log.write(f'Sleeping for {seconds_until_target/3600} hours')
