@@ -1,6 +1,14 @@
-2022-06-28 03:46:24.983389 Fresh log
-2022-06-28 03:46:27.581420 Watch2GetherBot is connected to Discord.
-2022-06-28 03:46:27.832771 Last Scheduled Post: 2022-06-27 17:00:00
-2022-06-28 03:46:27.833017 Preliminary Scheduled Post Time: 2022-06-28 17:00:00
-2022-06-28 03:46:27.833215 Scheduled Post Time - 2022-06-28 17:00:00
-2022-06-28 03:46:27.833343 Sleeping for 13.226363884444444 hours
+2022-10-26 04:50:12.786552 Fresh log
+2022-10-26 04:50:15.358109 Watch2GetherBot is connected to Discord.
+2022-10-26 04:50:15.508012 Last Scheduled Post: 2022-10-18 17:00:00
+2022-10-26 04:50:15.508312 Preliminary Scheduled Post Time: 2022-10-19 17:00:00
+2022-10-26 04:50:15.508559 WARNING: t_diff less than 0 (-155.8369122438889 hours). Modifying target_time.
+2022-10-26 04:50:15.508719 WARNING: t_diff less than 0 (-131.8369122438889 hours). Modifying target_time.
+2022-10-26 04:50:15.508857 WARNING: t_diff less than 0 (-107.83691224388888 hours). Modifying target_time.
+2022-10-26 04:50:15.509113 WARNING: t_diff less than 0 (-83.83691224388888 hours). Modifying target_time.
+2022-10-26 04:50:15.509261 WARNING: t_diff less than 0 (-59.83691224388889 hours). Modifying target_time.
+2022-10-26 04:50:15.509472 WARNING: t_diff less than 0 (-35.83691224388889 hours). Modifying target_time.
+2022-10-26 04:50:15.509576 WARNING: t_diff less than 0 (-11.83691224388889 hours). Modifying target_time.
+2022-10-26 04:50:15.509665 Scheduled Post Time - 2022-10-26 17:00:00
+2022-10-26 04:50:15.510659 Sleeping for 12.16308775611111 hours
+2022-10-26 04:50:25.664632 Last Scheduled Post: 2022-10-18 17:00:00
