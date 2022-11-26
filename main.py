@@ -121,11 +121,11 @@ async def daily_w2g():
     streamkey = os.environ['STREAMKEY']
     keyem = discord.Embed(
         title=
-        f'Here is the your Watch2Gether Link: \nhttps://w2g.tv/rooms/{streamkey}',
+        f'Here is the your Watch2Gether Link: \nhttps://w2g.tv/{streamkey}',
         description=
         'Watch2Gether lets you watch videos with your friends, synchronized at the same time.',
         color=16776960,
-        url=f'https://api.w2g.tv/rooms/{streamkey}')
+        url=f'https://w2g.tv/{streamkey}')
     keyem.set_thumbnail(url="https://w2g.tv/static/watch2gether-share.jpg")
     await channel.send(embed=keyem)
 
