@@ -15,6 +15,7 @@ bg_color = "#000000"  # Black
 bg_opacity = "50"
 
 # Setting the default post time in UTC
+WHEN_t = time(17, 0, 0)  # Default post time
 POST_TIMES = [time(11,0,0,0,tzinfo=timezone.utc)]
 
 # Opening a log file
@@ -167,5 +168,5 @@ def check_if_bot(msg):
     return bot.user.name in str(msg.author) and len(msg.content) == 0
 
 if __name__ == "__main__":
-    #keep_alive()
+    keep_alive()
     bot.run(TOKEN)
