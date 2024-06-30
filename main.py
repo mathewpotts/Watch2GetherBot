@@ -1,12 +1,12 @@
+l#!/usr/bin/python3
+
 # Import Libs
 import discord
 import os
 import requests
 import json
 from discord.ext import tasks, commands
-from datetime import datetime, time, timezone
-import asyncio
-from keep_alive import keep_alive
+from datetime import time, timezone
 import logger
 
 # Setting the W2G room creation parameters
@@ -15,10 +15,10 @@ bg_color = "#000000"  # Black
 bg_opacity = "50"
 
 # Setting the default post time in UTC
-POST_TIMES = [time(hour=17, tzinfo=timezone.utc)]
+POST_TIMES = [time(hour=19, tzinfo=timezone.utc)]
 
 # Opening a log file
-log = logger.Log('log.txt', max_lines=200)
+log = logger.Log('/home/potts/log.txt', max_lines=200, use_stdout=False)
 
 # Setting command prefix
 intents = discord.Intents.default()
@@ -26,10 +26,13 @@ intents.message_content = True
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 # Grabbing enviromental variables
-TOKEN = os.environ['TOKEN']
-W2GAPI = os.environ['W2G-API']
-CHANNEL = int(os.environ['CHANNEL'])
-GUILD = int(os.environ['GUILD'])
+with open('/home/potts/git/Watch2GetherBot/keys.txt','r') as f:
+    keys = f.read().split('\n')
+W2GAPI = keys[0]
+CHANNEL = int(keys[1])
+GUILD = int(keys[2])
+STREAMKEY = keys[3]
+TOKEN = keys[4]
 
 # Defining headers for W2G API
 headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
@@ -46,9 +49,6 @@ async def w2g(ctx):
   #log command
   log.write(f"{ctx.author.name} used !w2g command")
   await daily_w2g()  # Call room generation function
-  
-  
-
 
 @bot.command(name='watch', help="Play a video in the lastest watch2gether.")
 async def watch(ctx, link):
@@ -59,15 +59,16 @@ async def watch(ctx, link):
     # Notify that there is no streamkey
     await channel.send("No streamkey found. Please create a new room.")
   url = f"https://api.w2g.tv/rooms/{streamkey}/sync_update"
-  print(url)
+  #print(url)
   body = json.dumps({
       "w2g_api_key": f"{W2GAPI}",
       "item_url": link
   },
                     separators=(',', ':'))
   data = requests.post(url, headers=headers, data=body)
-  print(data)
-  #log command
+  #print(data)
+  #log command and data
+  log.write(f"{data}")
   log.write(f"{ctx.author.name} used !watch {link}")
 
 
@@ -95,7 +96,7 @@ async def queue(ctx, link):
     # Notify that there is no streamkey
     await channel.send("No streamkey found. Please create a new room.")
   purl = f"https://api.w2g.tv/rooms/{streamkey}/playlists/current/playlist_items/sync_update"
-  print(purl)
+  #print(purl)
   body = json.dumps(
       {
           "w2g_api_key": f"{W2GAPI}",
@@ -105,10 +106,11 @@ async def queue(ctx, link):
           }]
       },
       separators=(',', ':'))
-  print(body)
+  #print(body)
   data = requests.post(purl, headers=headers, data=body)
-  print(data)
+  #print(data)
   #Log command
+  log.write(f"{data}")
   log.write(f"{ctx.author.name} used !queue {link}")
 
 
@@ -125,7 +127,7 @@ async def daily_w2g():
       },
       separators=(',', ':'))
   data = requests.post(url, headers=headers, data=body).json()
-  print(data)
+  #print(data)
   os.environ['STREAMKEY'] = data['streamkey']
   streamkey = os.environ['STREAMKEY']
   keyem = discord.Embed(
@@ -136,6 +138,7 @@ async def daily_w2g():
       url=f'https://w2g.tv/{streamkey}')
   keyem.set_thumbnail(url="https://w2g.tv/static/watch2gether-share.jpg")
   #Log info
+  log.write(f"{data}")
   log.write(f"W2G Room created with key {streamkey}")
   await channel.send(embed=keyem)
 
@@ -156,5 +159,4 @@ def check_if_bot(msg):
 
 
 if __name__ == "__main__":
-  keep_alive()
-  bot.run(TOKEN)
+  bot.run(TOKEN, log_handler=None)
