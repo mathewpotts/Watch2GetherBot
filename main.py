@@ -1,4 +1,4 @@
-l#!/usr/bin/python3
+#!/usr/bin/python3
 
 # Import Libs
 import discord
