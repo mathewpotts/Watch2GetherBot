@@ -7,7 +7,14 @@ import requests
 import json
 from discord.ext import tasks, commands
 from datetime import time, timezone
-import logger
+import logging
+
+# set up logging
+logging.basicConfig(filename='/home/potts/w2g.log',
+                    filemode='w',
+                    format='%(asctime)s %(levelname)s: %(message)s',
+                    datefmt='%m/%d/%Y %I:%M:%S %p',
+                    level=logging.DEBUG)
 
 # Setting the W2G room creation parameters
 init_vid = "https://www.youtube.com/watch?v=lm6IU6V-dE8"  # Let's all go to the lobby
@@ -16,9 +23,6 @@ bg_opacity = "50"
 
 # Setting the default post time in UTC
 POST_TIMES = [time(hour=19, tzinfo=timezone.utc)]
-
-# Opening a log file
-log = logger.Log('/home/potts/log.txt', max_lines=200, use_stdout=False)
 
 # Setting command prefix
 intents = discord.Intents.default()
@@ -37,22 +41,21 @@ TOKEN = keys[4]
 # Defining headers for W2G API
 headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
 
-
 @bot.event
 async def on_ready():
-  log.write(f'{bot.user.name} is connected to Discord.')
+  logging.info(f'{bot.user.name} is connected to Discord.')
   try:
       await bot.tree.sync() # sync commands
-      log.write("Commands synced.")
+      logging.info("Commands synced.")
   except:
-      log.write("Commands not synced.")
+      logging.debug("Commands not synced.")
   daily_w2g.start()
 
 
 @bot.tree.command(name='w2g', description='Posts a new Watch2Gether Link.')
 async def w2g(ctx: discord.Interaction):
   #log command
-  log.write(f"{ctx.author.name} used !w2g command")
+  logging.info(f"{ctx.user} used !w2g command")
   await daily_w2g()  # Call room generation function
 
 @bot.tree.command(name='watch', description="Play a video in the lastest watch2gether.")
@@ -73,8 +76,8 @@ async def watch(ctx: discord.Interaction, link: str):
   data = requests.post(url, headers=headers, data=body)
   #print(data)
   #log command and data
-  log.write(f"{data}")
-  log.write(f"{ctx.author.name} used !watch {link}")
+  logging.debug(f"{data}")
+  logging.info(f"{ctx.user} used !watch {link}")
 
 
 @bot.tree.command(name='queue',
@@ -115,8 +118,8 @@ async def queue(ctx: discord.Interaction, link: str):
   data = requests.post(purl, headers=headers, data=body)
   #print(data)
   #Log command
-  log.write(f"{data}")
-  log.write(f"{ctx.author.name} used !queue {link}")
+  logging.debug(f"{data}")
+  logging.debug(f"{ctx.user} used !queue {link}")
 
 
 @tasks.loop(time=POST_TIMES)
@@ -132,7 +135,6 @@ async def daily_w2g():
       },
       separators=(',', ':'))
   data = requests.post(url, headers=headers, data=body).json()
-  #print(data)
   os.environ['STREAMKEY'] = data['streamkey']
   streamkey = os.environ['STREAMKEY']
   keyem = discord.Embed(
@@ -143,8 +145,8 @@ async def daily_w2g():
       url=f'https://w2g.tv/{streamkey}')
   keyem.set_thumbnail(url="https://w2g.tv/static/watch2gether-share.jpg")
   #Log info
-  log.write(f"{data}")
-  log.write(f"W2G Room created with key {streamkey}")
+  logging.debug(f"{data}")
+  logging.debug(f"W2G Room created with key {streamkey}")
   await channel.send(embed=keyem)
 
 
@@ -153,7 +155,7 @@ async def get_w2g_channel():
   )  # Make sure your guild cache is ready so the channel can be found via get_channel
   channel = bot.get_guild(GUILD).get_channel(CHANNEL)
 
-  log.write("Getting watch2gether channel.")
+  logging.info("Getting watch2gether channel.")
 
   return channel
 
