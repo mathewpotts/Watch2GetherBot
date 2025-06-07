@@ -41,17 +41,22 @@ headers = {'Accept': 'application/json', 'Content-Type': 'application/json'}
 @bot.event
 async def on_ready():
   log.write(f'{bot.user.name} is connected to Discord.')
+  try:
+      await bot.tree.sync() # sync commands
+      log.write("Commands synced.")
+  except:
+      log.write("Commands not synced.")
   daily_w2g.start()
 
 
-@bot.command(name='w2g', help='Posts a new Watch2Gether Link.')
-async def w2g(ctx):
+@bot.tree.command(name='w2g', description='Posts a new Watch2Gether Link.')
+async def w2g(ctx: discord.Interaction):
   #log command
   log.write(f"{ctx.author.name} used !w2g command")
   await daily_w2g()  # Call room generation function
 
-@bot.command(name='watch', help="Play a video in the lastest watch2gether.")
-async def watch(ctx, link):
+@bot.tree.command(name='watch', description="Play a video in the lastest watch2gether.")
+async def watch(ctx: discord.Interaction, link: str):
   channel = await get_w2g_channel()
   # POST request
   streamkey = os.environ['STREAMKEY']
@@ -72,9 +77,9 @@ async def watch(ctx, link):
   log.write(f"{ctx.author.name} used !watch {link}")
 
 
-@bot.command(name='queue',
-             help="Add a video to the lastest watch2gether's playlist.")
-async def queue(ctx, link):
+@bot.tree.command(name='queue',
+             description="Add a video to the lastest watch2gether's playlist.")
+async def queue(ctx: discord.Interaction, link: str):
   channel = await get_w2g_channel()
   # Currently the W2G API requires you to indivially name videos with the 'title' key.
   # So given a youtube URL I need to extract the videos title, so I can fill the 'title' key.
